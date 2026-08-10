@@ -1,0 +1,79 @@
+---
+# Dependency management (download roles/collections)
+dependency:
+  name: galaxy
+  options:
+    force: true
+    ignore-certs: false
+    ignore-errors: false
+    role-file: requirements.yml
+    requirements-file: requirements.yml
+
+platforms:
+  - name: slm-ansible-role-wazuh-client-backend
+    groups:
+      - wazuh_backend
+    # Kubevirt
+    image: quay.io/containerdisks/ubuntu:24.04
+    volume_size: 40Gi
+    instancetype: u1.xlarge
+    # Openstack
+    image_name: Ubuntu 24.04 64-bit
+    flavor: m1.xlarge
+  - name: slm-ansible-role-wazuh-client-agent
+    groups:
+      - wazuh_agent
+    # Kubevirt
+    image: quay.io/containerdisks/ubuntu:24.04
+    instancetype: u1.medium
+    # Openstack
+    image_name: Ubuntu 24.04 64-bit
+    flavor: m1.medium
+
+
+ansible:
+  cfg:
+    defaults:
+      host_key_checking: false
+      verbosity: 1
+    ssh_connection:
+      pipelining: true
+  env:
+    ANSIBLE_FORCE_COLOR: "1"
+    ANSIBLE_LOAD_CALLBACK_PLUGINS: "1"
+
+  executor:
+    backend: ansible-playbook
+    args:
+      ansible_playbook:
+        - --diff
+        - --force-handlers
+        - --inventory=/path/to/inventory.yml
+      ansible_navigator:
+        - --mode stdout
+        - --pull-policy missing
+        - --execution-environment-image ghcr.io/ansible/community-ansible-dev-tools:latest
+
+  playbooks:
+    create: create-kv.yml
+    destroy: destroy-kv.yml
+    prepare: prepare.yml
+    cleanup: cleanup.yml
+    converge: converge.yml
+    verify: verify.yml
+
+scenario:
+  name: default
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

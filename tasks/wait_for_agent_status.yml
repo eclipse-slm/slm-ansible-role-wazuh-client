@@ -1,0 +1,27 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs | wait_for_agent_status.yml
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_manager_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_manager_access_token is defined) and (wazuh_client_manager_access_token | length > 0)
+      - (wazuh_client_agent_ip is defined) and (wazuh_client_agent_ip | length > 0)
+      - (wazuh_client_agent_desired_status is defined) and (wazuh_client_agent_desired_status | length > 0)
+
+- name: WAZUH CLIENT | Get agent by IP until desired status is reached
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_manager_base_url }}/agents?q=ip={{ wazuh_client_agent_ip }}"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ wazuh_client_manager_access_token }}"
+    status_code: 200
+  register: wazuh_get_agent_by_ip_response
+  changed_when: false
+  failed_when:
+    - wazuh_get_agent_by_ip_response.status not in [200, 404]
+    - wazuh_get_agent_by_ip_response.json.data.affected_items | length == 0
+  until:
+    - (wazuh_get_agent_by_ip_response.json.data.affected_items | length > 0)
+    - (wazuh_get_agent_by_ip_response.json.data.affected_items | first).status == wazuh_client_agent_desired_status
+  retries: 10

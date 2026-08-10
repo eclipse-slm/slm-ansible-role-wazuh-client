@@ -1,0 +1,25 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs | get_agent_by_ip.yml
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_manager_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_manager_access_token is defined) and (wazuh_client_manager_access_token | length > 0)
+      - (wazuh_client_agent_ip is defined) and (wazuh_client_agent_ip | length > 0)
+
+- name: WAZUH CLIENT | Get agent by IP
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_manager_base_url }}/agents?q=ip={{ wazuh_client_agent_ip }}"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ wazuh_client_manager_access_token }}"
+    status_code: 200
+  register: wazuh_get_agent_by_ip_response
+  changed_when: false
+  failed_when: wazuh_get_agent_by_ip_response.status not in [200, 404]
+
+### Outputs:
+- name: WAZUH CLIENT | Set Agent fact found by IP
+  ansible.builtin.set_fact:
+    wazuh_client_manager_agent_by_ip: "{{ wazuh_get_agent_by_ip_response.json.data.affected_items | first }}"

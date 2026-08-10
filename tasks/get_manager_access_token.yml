@@ -1,0 +1,24 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_manager_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_manager_username is defined) and (wazuh_client_manager_username | length > 0)
+      - (wazuh_client_manager_password is defined) and (wazuh_client_manager_password | length > 0)
+
+- name: WAZUH CLIENT | Get Manager Access Token
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_manager_base_url }}/security/user/authenticate"
+    method: POST
+    user: "{{ wazuh_client_manager_username }}"
+    password: "{{ wazuh_client_manager_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    return_content: true
+  register: wazuh_manager_access_token_response
+
+### Outputs:
+- name: WAZUH CLIENT | Set Wazuh Manager Access Token fact
+  ansible.builtin.set_fact:
+    wazuh_client_manager_access_token: "{{ wazuh_manager_access_token_response.json.data.token }}"

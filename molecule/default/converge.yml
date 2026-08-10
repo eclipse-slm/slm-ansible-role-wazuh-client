@@ -1,0 +1,106 @@
+---
+# Purpose: bring the instance to the desired state by running the role under test.
+# Molecule calls this playbook with `molecule converge`.
+- name: CONVERGE | Assure Agent is installed
+  hosts: wazuh_agent
+  gather_facts: false
+  become: true
+  vars:
+    fabos_wazuh_service: agent
+    fabos_wazuh_service_state: present
+    fabos_wazuh_manager_ip: "{{ hostvars[groups['wazuh_backend'][0]].ansible_host }}"
+  roles:
+    - slm.wazuh
+
+- name: CONVERGE | wazuh_client
+  hosts: localhost
+  gather_facts: false # Disable if your role does not rely on facts
+  vars:
+    wazuh_client_manager_base_url: "https://{{ hostvars[groups['wazuh_backend'][0]].ansible_host }}:55000"
+    wazuh_client_manager_username: "wazuh-wui"
+    wazuh_client_manager_password: "MyS3cr37P450r.*-"
+    wazuh_client_agent_ip: "{{ hostvars[groups['wazuh_agent'][0]].ansible_host }}"
+  tasks:
+    - name: WAZUH CLIENT | Test 'get_manager_access_token.yml' tasks
+      block:
+        - name: WAZUH CLIENT | Test 'get_manager_access_token.yml' tasks
+          ansible.builtin.include_role:
+            name: ../../../slm-ansible-role-wazuh-client
+            tasks_from: get_manager_access_token.yml
+
+        - name: WAZUH CLIENT | Assert 'get_manager_access_token.yml'
+          ansible.builtin.assert:
+            that:
+              - wazuh_client_manager_access_token is defined
+              - wazuh_client_manager_access_token | length > 0
+
+    - name: WAZUH CLIENT | Test 'wait_for_agent_status.yml' tasks
+      ansible.builtin.include_role:
+        name: ../../../slm-ansible-role-wazuh-client
+        tasks_from: wait_for_agent_status.yml
+      vars:
+        wazuh_client_agent_desired_status: "active"
+
+    - name: WAZUH CLIENT | Test 'get_agents.yml' tasks
+      block:
+        - name: WAZUH CLIENT | Test 'get_agents.yml' tasks
+          ansible.builtin.include_role:
+            name: ../../../slm-ansible-role-wazuh-client
+            tasks_from: get_agents.yml
+
+        - name: WAZUH CLIENT | Assert 'get_agents.yml'
+          ansible.builtin.assert:
+            that:
+              - wazuh_client_manager_agents is defined
+              - wazuh_client_manager_agents | length == 2
+
+    - name: WAZUH CLIENT | Test 'get_agent_by_ip.yml' tasks
+      block:
+        - name: WAZUH CLIENT | Test 'get_agent_by_ip.yml' | Run task
+          ansible.builtin.include_role:
+            name: ../../../slm-ansible-role-wazuh-client
+            tasks_from: get_agent_by_ip.yml
+
+        - name: WAZUH CLIENT | Test 'get_agent_by_ip.yml' | Assert task
+          ansible.builtin.assert:
+            that:
+              - wazuh_client_manager_agent_by_ip is defined
+              - wazuh_client_manager_agent_by_ip.id is defined
+              - wazuh_client_manager_agent_by_ip.id | length > 0
+
+
+- name: CONVERGE | Assure Agent is uninstalled
+  hosts: wazuh_agent
+  gather_facts: false
+  become: true
+  vars:
+    fabos_wazuh_service: agent
+    fabos_wazuh_service_state: absent
+  roles:
+    - slm.wazuh
+
+- name: CONVERGE | wazuh_client
+  hosts: localhost
+  gather_facts: false # Disable if your role does not rely on facts
+  vars:
+    wazuh_client_manager_base_url: "https://{{ hostvars[groups['wazuh_backend'][0]].ansible_host }}:55000"
+    wazuh_client_manager_username: "wazuh-wui"
+    wazuh_client_manager_password: "MyS3cr37P450r.*-"
+  tasks:
+    - name: WAZUH CLIENT | Test 'clear_agents.yml' tasks
+      block:
+        - name: WAZUH CLIENT | Test 'clear_agents.yml' | Run task
+          ansible.builtin.include_role:
+            name: ../../../slm-ansible-role-wazuh-client
+            tasks_from: clear_agents.yml
+
+        - name: WAZUH CLIENT | Test 'clear_agents.yml' | Get Agent list
+          ansible.builtin.include_role:
+            name: ../../../slm-ansible-role-wazuh-client
+            tasks_from: get_agents.yml
+
+        - name: WAZUH CLIENT | Test 'clear_agents.yml' | Verify Agent list count
+          ansible.builtin.assert:
+            that:
+              - wazuh_client_manager_agents is defined
+              - wazuh_client_manager_agents | length == 1

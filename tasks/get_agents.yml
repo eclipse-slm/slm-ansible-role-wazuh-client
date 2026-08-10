@@ -1,0 +1,24 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs | get_agents.yml
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_manager_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_manager_access_token is defined) and (wazuh_client_manager_access_token | length > 0)
+
+- name: WAZUH CLIENT | Get agents
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_manager_base_url }}/agents"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ wazuh_client_manager_access_token }}"
+    status_code: 200
+  register: wazuh_get_agents_response
+  changed_when: false
+  failed_when: wazuh_get_agents_response.status not in [200, 404]
+
+### Outputs:
+- name: WAZUH CLIENT | Set Wazuh Manager Agents fact
+  ansible.builtin.set_fact:
+    wazuh_client_manager_agents: "{{ wazuh_get_agents_response.json.data.affected_items }}"

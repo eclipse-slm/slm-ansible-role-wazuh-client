@@ -1,0 +1,14 @@
+---
+- name: PREPARE | Wazuh Backend
+  hosts: wazuh_backend
+  become: true
+  vars:
+    fabos_wazuh_service: backend
+    fabos_wazuh_service_state: present
+    fabos_wazuh_default_compose_ports:
+      - container_port: 5601
+        exposed_port: 80
+    fabos_wazuh_default_dashboard_tls_enabled: false
+  roles:
+    - fabos.slm-ansible-role-docker
+    - slm.wazuh

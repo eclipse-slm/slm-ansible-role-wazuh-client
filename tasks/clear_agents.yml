@@ -1,0 +1,19 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs | clear_agents.yml
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_manager_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_manager_access_token is defined) and (wazuh_client_manager_access_token | length > 0)
+
+- name: Clear all agents in state disconnected
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_manager_base_url }}/agents?agents_list=all&status=disconnected,never_connected&older_than=0s&purge=true"
+    method: DELETE
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ wazuh_client_manager_access_token }}"
+    status_code: 200
+  register: wazuh_delete_response
+  changed_when: wazuh_delete_response.status == 200
+  failed_when: wazuh_delete_response.status not in [200, 404]
