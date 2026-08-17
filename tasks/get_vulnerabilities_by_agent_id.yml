@@ -1,0 +1,30 @@
+---
+### Inputs:
+- name: WAZUH CLIENT | Assert Inputs | get_vulnerabilities_by_agent_id.yml
+  ansible.builtin.assert:
+    that:
+      - (wazuh_client_indexer_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_indexer_username is defined) and (wazuh_client_indexer_username | length > 0)
+      - (wazuh_client_indexer_password is defined) and (wazuh_client_indexer_password | length > 0)
+      - (wazuh_client_agent_id is defined) and (wazuh_client_agent_id | length > 0)
+
+- name: "Get Vulnerabilities of agent with ID={{ wazuh_client_agent_id }}"
+  ansible.builtin.uri:
+    url: "{{ wazuh_client_indexer_base_url }}/wazuh-states-vulnerabilities-*/_search?pretty"
+    method: GET
+    user: "{{ wazuh_indexer_user }}"
+    password: "{{ wazuh_indexer_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      query:
+        term:
+          "agent.id": "{{ wazuh_client_agent_id }}"
+    status_code: [200]
+  register: get_vulnerabilities_response
+
+### Outputs:
+- name: WAZUH CLIENT | Set Vulnerabilities
+  ansible.builtin.set_fact:
+    wazuh_client_vulnerabilities: "{{ get_vulnerabilities_response.json }}"

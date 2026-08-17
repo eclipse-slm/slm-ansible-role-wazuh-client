@@ -7,7 +7,7 @@
       - (wazuh_client_manager_access_token is defined) and (wazuh_client_manager_access_token | length > 0)
       - (wazuh_client_agent_ip is defined) and (wazuh_client_agent_ip | length > 0)
 
-- name: WAZUH CLIENT | Get agent by IP
+- name: "WAZUH CLIENT | Get agent by IP={{ wazuh_client_agent_ip }}"
   ansible.builtin.uri:
     url: "{{ wazuh_client_manager_base_url }}/agents?q=ip={{ wazuh_client_agent_ip }}"
     method: GET
