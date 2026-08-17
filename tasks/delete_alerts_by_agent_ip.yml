@@ -3,7 +3,7 @@
 - name: WAZUH CLIENT | Assert Inputs | delete_alerts_by_agent_ip.yml
   ansible.builtin.assert:
     that:
-      - (wazuh_client_indexer_base_url is defined) and (wazuh_client_manager_base_url | length > 0)
+      - (wazuh_client_indexer_base_url is defined) and (wazuh_client_indexer_base_url | length > 0)
       - (wazuh_client_indexer_username is defined) and (wazuh_client_indexer_username | length > 0)
       - (wazuh_client_indexer_password is defined) and (wazuh_client_indexer_password | length > 0)
       - (wazuh_client_agent_ip is defined) and (wazuh_client_agent_ip | length > 0)
